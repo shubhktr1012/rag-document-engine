@@ -8,12 +8,12 @@ services:
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     volumes:
-      - ./cv.txt:/app/cv.txt
+      - ./uploaded_documents:/app/uploaded_documents
 
   gateway:
     build:
-      context: ./cv-api-gateway
-      dockerfile: Dockerfile
+      context: ./rag-document-gateway
+      dockerfile: dockerfile
     ports:
       - "4000:4000"
     environment:
@@ -23,12 +23,12 @@ services:
 
   frontend:
     build:
-      context: ./cv-ai-frontend
+      context: ./rag-document-frontend
       dockerfile: dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - ./cv-ai-frontend:/app
+      - ./rag-document-frontend:/app
       - /app/node_modules # This is crucial to prevent host's node_modules from overwriting container's
     command: npm run dev -- --host 0.0.0.0 # Use standard npm script with host argument
     depends_on:
