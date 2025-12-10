@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-// Removed react-pdf imports and pdfjs configuration
 
 const FileUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState<string>('cv');
   const [isDragging, setIsDragging] = useState(false);
-  // Removed numPages state
   const [textContent, setTextContent] = useState<string | null>(null);
-
-  // Removed onDocumentLoadSuccess
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadMessage, setUploadMessage] = useState<string>('');
 
   useEffect(() => {
     if (file && file.type === 'text/plain') {
@@ -27,7 +25,6 @@ const FileUpload: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setFile(event.target.files[0]);
-      // Removed numPages reset
     }
   };
 
@@ -63,14 +60,38 @@ const FileUpload: React.FC = () => {
     }
   };
 
-  const handleUpload = () => {
-    if (file) {
-      // Placeholder for actual upload logic
-      console.log('Uploading file:', file.name);
-      console.log('Selected category:', category);
-      alert(`File "${file.name}" ready for processing in category "${category}".`);
-    } else {
+  const handleUpload = async () => {
+    if (!file) {
       alert('Please select a file first.');
+      return;
+    }
+
+    setUploadStatus('uploading');
+    setUploadMessage('Processing document...');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+
+    try {
+      const response = await fetch('http://localhost:5001/upload-document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUploadStatus('success');
+        setUploadMessage(data.message);
+      } else {
+        setUploadStatus('error');
+        setUploadMessage(`Upload failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadStatus('error');
+      setUploadMessage('An error occurred. Is the backend server running?');
     }
   };
 
@@ -115,7 +136,7 @@ const FileUpload: React.FC = () => {
                 </div>
               ) : (
                 <div className="file-preview-icon generic">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                 </div>
               )}
               <div className="file-preview-details">
@@ -139,10 +160,16 @@ const FileUpload: React.FC = () => {
           <option value="general">General Document</option>
         </select>
         
-        <button onClick={handleUpload} className="upload-button" disabled={!file}>
-          Process Document
+        <button onClick={handleUpload} className="upload-button" disabled={!file || uploadStatus === 'uploading'}>
+          {uploadStatus === 'uploading' ? 'Processing...' : 'Process Document'}
         </button>
       </div>
+
+      {uploadMessage && (
+        <div className={`upload-status-message ${uploadStatus}`}>
+          <p>{uploadMessage}</p>
+        </div>
+      )}
     </div>
   );
 };
