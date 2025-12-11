@@ -5,6 +5,17 @@ import Chatbox from './Chatbox';
 import FileUpload from './FileUpload';
 
 function App() {
+  const [chatSessionId, setChatSessionId] = React.useState(0);
+
+  const handleReset = async () => {
+    try {
+      await fetch('http://localhost:5001/reset', { method: 'POST' });
+      setChatSessionId(prev => prev + 1);
+    } catch (error) {
+      console.error("Failed to reset session:", error);
+    }
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -12,13 +23,14 @@ function App() {
           <div className="badge">AI-Powered Analysis</div>
           <h1>Unlock Insights from Your Documents</h1>
           <p>Upload any document—CVs, research papers, legal contracts—and get instant, accurate answers powered by advanced AI.</p>
+          <button onClick={handleReset} className="reset-button">Reset Session</button>
         </div>
       </header>
 
       <main className="App-main">
         <div className="app-container">
-          <FileUpload />
-          <Chatbox />
+          <FileUpload onUploadSuccess={() => setChatSessionId(prev => prev + 1)} />
+          <Chatbox key={chatSessionId} />
         </div>
       </main>
 

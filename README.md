@@ -21,7 +21,7 @@ To get the project up and running, you will need to set up both the Python backe
 *   Python 3.8+
 *   Node.js 14+
 *   Docker (optional, for running the backend in a container)
-*   A Google API key with the Gemini API enabled
+*   A Google Gemini API key with the Gemini API enabled
 
 ### 1. Set Up the Python Backend
 
@@ -41,7 +41,7 @@ To get the project up and running, you will need to set up both the Python backe
 3.  **Set up environment variables**:
     Create a `.env` file in the root of the project and add your Google API key:
     ```
-    GOOGLE_API_KEY="your-google-api-key"
+    GEMINI_API_KEY="your-gemini-api-key"
     ```
 
 4.  **Add your CV**:

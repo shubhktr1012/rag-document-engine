@@ -1,0 +1,14 @@
+langchain>=1.0.0
+langchain-classic>=0.1.0
+langchain-community
+langchain-core
+langchain-google-genai>=2.0.0
+langchain-text-splitters
+langchain-huggingface
+faiss-cpu
+flask
+flask-cors
+gunicorn
+python-dotenv
+pypdf
+sentence-transformers
