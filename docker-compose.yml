@@ -1,18 +1,18 @@
 services:
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: dockerfile
     ports:
       - "5001:5000"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
-      - ./uploaded_documents:/app/uploaded_documents
+      - ./backend/uploaded_documents:/app/uploaded_documents
 
   gateway:
     build:
-      context: ./rag-document-gateway
+      context: ./gateway
       dockerfile: dockerfile
     ports:
       - "4000:4000"
@@ -23,12 +23,12 @@ services:
 
   frontend:
     build:
-      context: ./rag-document-frontend
+      context: ./frontend
       dockerfile: dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - ./rag-document-frontend:/app
+      - ./frontend:/app
       - /app/node_modules # This is crucial to prevent host's node_modules from overwriting container's
     command: npm run dev -- --host 0.0.0.0 # Use standard npm script with host argument
     depends_on:

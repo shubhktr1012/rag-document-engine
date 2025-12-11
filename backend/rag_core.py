@@ -3,25 +3,43 @@ import re
 from dotenv import load_dotenv #load environment variables from a .env file
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings #Google Generative AI
 from langchain_community.vectorstores import FAISS #FAISS is a vector store for efficient similarity search
-from langchain.text_splitter import RecursiveCharacterTextSplitter #split text into chunks
+from langchain_text_splitters import RecursiveCharacterTextSplitter #split text into chunks
 from langchain_community.document_loaders import TextLoader, PyPDFLoader #load text files
-from langchain.chains import RetrievalQA #retrieval QA chain to use over your own data
-from langchain.prompts import PromptTemplate #prompt template to use over your own datas
+from langchain_classic.chains import RetrievalQA #retrieval QA chain to use over your own data
+from langchain_core.prompts import PromptTemplate #prompt template to use over your own datas
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 
 #Load environment variables
 load_dotenv()
 
-api_key = os.getenv("GOOGLE_API_KEY")
+import shutil # file operations
+
+api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    raise ValueError("GOOGLE_API_KEY not found in environment variables")
+    raise ValueError("GEMINI_API_KEY not found in environment variables")
 
 #Configure Gemini Model and Embeddings
-llm = ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=api_key, temperature=0.3) #temperature is the randomness of the model
-embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key) #embeddings are the vectors that represent the text
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key, temperature=0.3) #temperature is the randomness of the model
+embeddings = HuggingFaceEmbeddings(model="all-MiniLM-L6-v2") #embeddings are the vectors that represent the text
 
 # Initialize RAG components as None. They will be created after a file is uploaded.
 vector_store = None
 qa_chain = None
+
+def reset_rag_model():
+    """Resets the RAG model and deletes uploaded files."""
+    global vector_store, qa_chain
+    vector_store = None
+    qa_chain = None
+    
+    upload_dir = 'uploaded_documents'
+    if os.path.exists(upload_dir):
+        try:
+            shutil.rmtree(upload_dir)
+            os.makedirs(upload_dir) # Recreate empty directory
+            print("Reset RAG model and cleared uploaded documents.")
+        except Exception as e:
+            print(f"Error clearing uploaded documents: {e}")
 
 qa_prompt = PromptTemplate.from_template(
     "You are answering strictly from the document provided to you. The user owns the document and consents to extracting details.\n"
@@ -53,7 +71,24 @@ def initialize_rag_model(document_path: str):
             separators=["\n\n", "\n", " ", ""]
         )
         texts = text_splitter.split_documents(documents)
-        vector_store = FAISS.from_documents(texts, embeddings)
+        
+        # Initialize vector store with first batch to avoid empty index issues
+        # Batch size of 10 with 2s sleep to respect free tier limits
+        import time
+        batch_size = 10
+        vector_store = None
+        
+        print(f"Processing {len(texts)} text chunks...")
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            if vector_store is None:
+                vector_store = FAISS.from_documents(batch, embeddings)
+            else:
+                vector_store.add_documents(batch)
+            print(f"Processed batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}")
+            time.sleep(2) # Sleep to prevent 429 Resource Exhausted
+
         retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": 8, "fetch_k": 40})
 
         qa_chain = RetrievalQA.from_chain_type(

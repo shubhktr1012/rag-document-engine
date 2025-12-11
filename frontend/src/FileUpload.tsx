@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-const FileUpload: React.FC = () => {
+interface FileUploadProps {
+  onUploadSuccess?: () => void;
+}
+
+const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState<string>('cv');
   const [isDragging, setIsDragging] = useState(false);
@@ -84,6 +88,9 @@ const FileUpload: React.FC = () => {
       if (response.ok) {
         setUploadStatus('success');
         setUploadMessage(data.message);
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
       } else {
         setUploadStatus('error');
         setUploadMessage(`Upload failed: ${data.error}`);
@@ -99,19 +106,19 @@ const FileUpload: React.FC = () => {
     <div className={`file-upload-container ${file ? 'has-file' : ''}`}>
       <h2>Upload a Document</h2>
       <p>Select a document category and upload it to start asking questions.</p>
-      
+
       <div className="file-upload-content-wrapper">
-        <div 
+        <div
           className={`drop-zone ${isDragging ? 'dragging' : ''}`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragEvents}
           onDrop={handleDrop}
         >
-          <input 
-            type="file" 
-            id="file-upload" 
-            onChange={handleFileChange} 
+          <input
+            type="file"
+            id="file-upload"
+            onChange={handleFileChange}
             accept=".pdf,.doc,.docx,.txt"
           />
           <label htmlFor="file-upload" className="file-input-label">
@@ -159,7 +166,7 @@ const FileUpload: React.FC = () => {
           <option value="legal">Legal Document</option>
           <option value="general">General Document</option>
         </select>
-        
+
         <button onClick={handleUpload} className="upload-button" disabled={!file || uploadStatus === 'uploading'}>
           {uploadStatus === 'uploading' ? 'Processing...' : 'Process Document'}
         </button>
