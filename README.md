@@ -1,123 +1,128 @@
-# CV AI Service
+# RAG Document Engine
 
-This project is a simple AI-powered service for answering questions about a CV. It uses a Retrieval-Augmented Generation (RAG) model to provide answers based on the content of a given CV.
+<div align="center">
+  <img src="assets/screenshot.webp" alt="RAG Document Engine Interface Preview" width="100%" />
+</div>
 
-## Architecture
+<div align="center">
+  <h3>
+    <a href="https://github.com/shubhktr1012/rag-document-engine">GitHub Repository</a>
+    <span> | </span>
+    <span>Microservices Architecture</span>
+    <span> | </span>
+    <span>Dockerized Stack</span>
+  </h3>
+</div>
 
-The project consists of two main components:
+---
 
-1.  **Python Backend (`rag-document-engine`)**: A Flask application that exposes a RESTful API for the AI service. It uses LangChain and Google's Gemini Pro model to power the RAG functionality.
-2.  **Node.js API Gateway (`rag-document-gateway`)**: A GraphQL API gateway built with Apollo Server and Express. It provides a clean, modern interface for interacting with the backend service.
+## Overview
 
-Here is a high-level diagram of the architecture:
-[Client] -> [GraphQL API Gateway (Node.js)] -> [RESTful API (Python)] -> [RAG Model]
+A high-throughput Retrieval-Augmented Generation (RAG) platform enabling users to upload multi-page documents (PDF, TXT) and execute context-grounded semantic inquiries powered by Google Gemini 2.5 Flash and vector similarity indexing.
 
-## Getting Started
+---
 
-To get the project up and running, you will need to set up both the Python backend and the Node.js API gateway.
+## System Architecture
 
-### Prerequisites
+The application is structured into decoupled microservices:
 
-*   Python 3.8+
-*   Node.js 14+
-*   Docker (optional, for running the backend in a container)
-*   A Google Gemini API key with the Gemini API enabled
+1. **Frontend (/frontend):** Single-page application built with React, Vite, and TypeScript. Provides real-time document drag-and-drop, query streaming, and citation inspection.
+2. **API Gateway (/gateway):** GraphQL orchestration layer built with Node.js and Apollo Server. Serves as the unified schema entry point, mediating authentication, request batching, and routing to downstream services.
+3. **AI Backend (/backend):** Asynchronous Python Flask engine utilizing LangChain and Google Generative AI. Coordinates document parsing, chunking, FAISS vector indexing with HuggingFace embeddings, and grounded synthesis.
 
-### 1. Set Up the Python Backend
+---
 
-1.  **Clone the repository**:
-    ```bash
-    git clone <repository-url>
-    cd rag-document-engine
-    ```
+## High-Level Pipeline Flow
 
-2.  **Create a virtual environment and install dependencies**:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    pip install -r requirements.txt
-    ```
+```mermaid
+flowchart LR
+    Client --> Gateway
+    Gateway --> AIBackend
+    AIBackend --> VectorStore
+    AIBackend --> GeminiAPI
+```
 
-3.  **Set up environment variables**:
-    Create a `.env` file in the root of the project and add your Google API key:
-    ```
-    GEMINI_API_KEY="your-gemini-api-key"
-    ```
+---
 
-4.  **Add your CV**:
-    Replace the content of `cv.txt` with your own CV.
+## Tech Stack
 
-5.  **Run the backend**:
-    ```bash
-    python app.py
-    ```
-    The backend will be running at `http://localhost:5000`.
+* **Frontend:** React, TypeScript, Vite, Tailwind CSS
+* **Gateway:** Node.js, Apollo Server, GraphQL, Express
+* **Core Backend:** Python, Flask, LangChain, FAISS, HuggingFace Embeddings
+* **LLM Engine:** Google Gemini 2.5 Flash
+* **DevOps:** Docker, Docker Compose
 
-### 2. Set Up the Node.js API Gateway
+---
 
-1.  **Navigate to the gateway directory**:
-    ```bash
-    cd rag-document-gateway
-    ```
+## Quick Start with Docker Compose
 
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
+1. Clone the repository:
+```bash
+git clone https://github.com/shubhktr1012/rag-document-engine.git
+cd rag-document-engine
+```
 
-3.  **Run the gateway**:
-    ```bash
-    npm start
-    ```
-    The API gateway will be running at `http://localhost:4000/graphql`.
+2. Configure environment credentials in `.env`:
+```bash
+GEMINI_API_KEY="your_api_key_here"
+```
 
-## Usage
+3. Launch the containerized stack:
+```bash
+docker-compose up --build
+```
 
-You can interact with the service by sending GraphQL mutations to the API gateway. Here is an example of how to ask a question using the `askCV` mutation:
+4. Service Endpoints:
+* Frontend Interface: http://localhost:5173
+* GraphQL Playground: http://localhost:4000/graphql
+* Backend REST Engine: http://localhost:5001
+
+---
+
+## Manual Service Execution
+
+### 1. Python Backend
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+export GEMINI_API_KEY="your_api_key_here"
+python app.py
+```
+
+### 2. Apollo GraphQL Gateway
+```bash
+cd gateway
+npm install
+npm start
+```
+
+### 3. React Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## API Endpoints
+
+### GraphQL Gateway
+Endpoint: `http://localhost:4000/graphql`
 
 ```graphql
-mutation {
-  askCV(question: "What is the candidate's name?")
+type Query {
+  _empty: String
+}
+
+type Mutation {
+  askCV(question: String!): String
 }
 ```
 
-You can use a tool like Postman or the Apollo Studio Explorer (available at `http://localhost:4000/graphql`) to send this mutation.
-
-## API Reference
-
-### GraphQL API (Node.js)
-
-*   **Endpoint**: `http://localhost:4000/graphql`
-*   **Schema**:
-    ```graphql
-    type Mutation {
-      askCV(question: String!): String
-    }
-
-    type Query {
-      _empty: String
-    }
-    ```
-
-### RESTful API (Python)
-
-*   **Endpoint**: `/ask`
-*   **Method**: `POST`
-*   **Request Body**:
-    ```json
-    {
-      "question": "Your question here"
-    }
-    ```
-*   **Success Response**:
-    ```json
-    {
-      "answer": "The answer to your question.",
-      "sources": [
-        {
-          "source": "cv.txt",
-          "content": "Relevant content from the CV..."
-        }
-      ]
-    }
-    ```
+### REST Backend
+* `POST /upload-document`: Multipart file ingestion (PDF/TXT).
+* `POST /ask`: JSON payload `{"question": "..."}` returning synthesized response and source citations.
+* `POST /reset`: Flushes existing vector index from memory.
